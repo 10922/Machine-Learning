@@ -1,0 +1,265 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+
+# (시험1 점수), (시험2 점수), (합격 여부)
+# Ng, Machine Learning, Coursera, ml-ex2 중
+import pandas as pd
+data = pd.read_csv('admit.txt', names=['ex1', 'ex2', 'Admitted'])
+print data
+
+X = np.c_[data['ex1'], data['ex2']]  # 점수
+y = data['Admitted']  # 합격 여부 (1: admitted, 0: not admitted)
+m = len(data)  # 정보 개수 (행 개수)
+
+
+# In[2]:
+
+
+# numpy array 형태로 변환, 형태 변환 (m) -> (m,1)
+# X = (np.array(X)).reshape(m,2)
+# y = (np.array(y)).reshape(m,1)
+print X.shape, y.shape
+
+
+# In[3]:
+
+
+# 합격, 불합격 데이터 인덱스 찾기
+pos = []
+neg = []
+
+for (i, val) in enumerate(y):
+    if val == 1:
+        pos.append(i)
+    else:
+        neg.append(i)
+print pos
+print neg
+
+
+# In[5]:
+
+
+import matplotlib.pyplot as plt
+plt.plot(X[pos,0].reshape(-1), X[pos,1].reshape(-1), 'b+', label='Admitted')  # X[:, 1].reshape(-1): 한 줄로 펴기 (m,) -> (m)
+plt.plot(X[neg,0].reshape(-1), X[neg,1].reshape(-1), 'ro', label='Not admitted')
+plt.xlabel("Exam 1 score")  # 집 크기 (제곱피트)
+plt.ylabel("Exam 2 score")  # 매매가 (달러)
+plt.legend(loc='upper right')
+plt.show()
+
+
+# In[8]:
+
+
+from sklearn.linear_model import LogisticRegression
+
+log_reg = LogisticRegression(solver='liblinear', multi_class='ovr', n_jobs=1, C=10)  # C: 클수록 규제 줄어듦
+log_reg.fit(X, y)
+
+
+# In[9]:
+
+
+# exam1 30점, exam2 70점 맞은 학생은 합격/불합격?
+# exam1 50점, exam2 90점
+log_reg.predict([[30,70],
+                [50,90]])
+
+
+# In[10]:
+
+
+# Plot the decision boundary. For that, we will assign a color to each
+# point in the mesh [x_min, x_max]x[y_min, y_max]
+x_min, x_max = X[:, 0].min(), X[:, 0].max()
+y_min, y_max = X[:, 1].min(), X[:, 1].max()
+h = .2  # step size in the mesh
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+Z = log_reg.predict(np.c_[xx.ravel(), yy.ravel()])
+
+# Put the result into a color plot
+Z = Z.reshape(xx.shape)
+plt.figure(1)
+plt.pcolormesh(xx, yy, Z, cmap=plt.cm.Paired)
+
+# Plot also the training points
+plt.plot(X[pos,0].reshape(-1), X[pos,1].reshape(-1), 'b+', label='Passed')
+plt.plot(X[neg,0].reshape(-1), X[neg,1].reshape(-1), 'ro', label='Not passed')
+plt.xlabel("Microchip Test 1")  # 집 크기 (제곱피트)
+plt.ylabel("Microchip Test 2")  # 매매가 (달러)
+plt.legend(loc='upper right')
+
+plt.xlim(xx.min(), xx.max())
+plt.ylim(yy.min(), yy.max())
+plt.xticks(())
+plt.yticks(())
+
+plt.show()
+
+
+# In[11]:
+
+
+import numpy as np
+
+# (test1), (test2), (Quality Assurance 통과 여부)
+# Ng, Machine Learning, Coursera, ml-ex2 중
+import pandas as pd
+data = pd.read_csv('qa.txt', names=['t1', 't2', 'Passed'])
+print data
+
+X = np.c_[data['t1'], data['t2']]  # 점수
+y = data['Passed']  # 합격 여부 (1: passed, 0: failed)
+m = len(data)  # 정보 개수 (행 개수)
+
+
+# In[12]:
+
+
+# numpy array 형태로 변환, 형태 변환 (m) -> (m,1)
+# X = (np.array(X)).reshape(m,2)
+# y = (np.array(y)).reshape(m,1)
+print X.shape, y.shape
+
+
+# In[13]:
+
+
+# passed, failed 데이터 인덱스 찾기
+pos = []
+neg = []
+
+for (i, val) in enumerate(y):
+    if val == 1:
+        pos.append(i)
+    else:
+        neg.append(i)
+print pos
+print neg
+
+
+# In[14]:
+
+
+import matplotlib.pyplot as plt
+plt.plot(X[pos,0].reshape(-1), X[pos,1].reshape(-1), 'b+', label='Passed')
+plt.plot(X[neg,0].reshape(-1), X[neg,1].reshape(-1), 'ro', label='Failed')
+plt.xlabel("Microchip Test 1")  # Test1 수치
+plt.ylabel("Microchip Test 2")  # Test2 수치
+plt.legend(loc='upper right')
+plt.show()
+
+
+# In[15]:
+
+
+# X_poly = mapFeature(X[:,0], X[:,1])
+from sklearn.preprocessing import PolynomialFeatures
+degree = 6
+poly_features = PolynomialFeatures(degree=degree, include_bias=False)
+X_poly = poly_features.fit_transform(X)
+
+print X[0]
+print X_poly[0].shape
+
+
+# In[17]:
+
+
+from sklearn.linear_model import LogisticRegression
+
+log_reg = LogisticRegression(penalty='l2', solver='liblinear', multi_class='ovr', n_jobs=1, C=1e-1)  # 1e-1 (규제 많이)
+log_reg.fit(X_poly, y)
+
+
+# In[19]:
+
+
+u = np.linspace(-1, 1.5, 300)
+v = np.linspace(-1, 1.5, 300)
+z = np.zeros((len(u), len(v)))
+
+for i in range(len(u)):
+    a = []
+    for j in range(len(v)):
+        a.append(np.array([u[i], v[j]]))
+    
+    my_data = poly_features.fit_transform(a)
+    z[i] = log_reg.predict(my_data)
+
+plt.contour(u, v, z, 0)
+
+plt.plot(X[pos,0].reshape(-1), X[pos,1].reshape(-1), 'b+', label='Passed')
+plt.plot(X[neg,0].reshape(-1), X[neg,1].reshape(-1), 'ro', label='Failed')
+plt.xlabel("Microchip Test 1")
+plt.ylabel("Microchip Test 2")
+plt.legend(loc='upper right')
+plt.show()
+
+
+# In[21]:
+
+
+#1. y값 prediction
+"""편의상 train 데이터에 관해 prediction함
+원래는 validation, test 데이터에 관해 해야 함"""
+y_pred = log_reg.predict(X_poly)
+print y_pred
+
+#2. confusion matrix
+from sklearn.metrics import confusion_matrix
+conf_mat = confusion_matrix(y, y_pred)
+print conf_mat
+plt.matshow(conf_mat, cmap=plt.cm.gray)
+plt.show()
+
+#3. precision & recall
+from sklearn.metrics import precision_score, recall_score
+print "precision_score: ", precision_score(y, y_pred)  # 46 / (46+14)
+print "recall_score: ", recall_score(y, y_pred)  # 46 / (46+16)
+
+#4. F1 score
+from sklearn.metrics import f1_score
+print "F1_score: ", f1_score(y, y_pred)
+
+
+# In[22]:
+
+
+# y probability
+y_scores = log_reg.decision_function(X_poly)
+print y_scores
+
+
+# In[23]:
+
+
+#5. ROC curve
+from sklearn.metrics import roc_curve
+fpr, tpr, thresholds = roc_curve(y, y_scores)
+
+def plot_roc_curve(fpr, tpr, label=None):
+    plt.plot(fpr, tpr, linewidth=2, label=label)
+    plt.plot([0,1], [0,1], 'k--')
+    plt.axis([0,1,0,1])
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+plot_roc_curve(fpr, tpr)
+plt.show()
+
+#6. AUC
+from sklearn.metrics import roc_auc_score
+print "roc_auc_score: ", roc_auc_score(y, y_scores)
+
+
+# In[ ]:
+
+
+
+
